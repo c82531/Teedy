@@ -18,7 +18,7 @@ pipeline {
     }
     stage('Test'){
       steps {
-        sh 'mvn test'
+        sh 'mvn -Dtest=TestCss test'
       }
       post {
         always {
@@ -32,6 +32,7 @@ pipeline {
       archiveArtifacts artifacts: '**/target/site/**', fingerprint: true
       archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
       archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
+      archiveArtifacts artifacts: '**/target/surefire-reports/**', fingerprint: true
     }  
   }
 }
