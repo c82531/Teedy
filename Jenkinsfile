@@ -1,66 +1,15 @@
 pipeline {
-  agent any
-
-    environment {
-        // 你的Docker仓库的凭证ID
-        DOCKER_CREDENTIALS_ID = 'dockerhub_credentials'
-        // 你想要推送的镜像名字
-        IMAGE_NAME = 'c82531/teedytest2024'
-        // 标签，可以根据实际情况设置
-        TAG = 'v1.0'
-    }
-
-  stages{
-    stage('Package') {
-      steps {
-        checkout scm
-        sh 'mvn -B -DskipTests clean package'
-
-      }
-    }
-    
-    stage('Build Image') {
+    agent any
+    stages {
+        stage('Build') {
             steps {
-                // 使用Docker命令构建镜像
-                sh "sudo docker build -t ${IMAGE_NAME}:${TAG} -f Dockerfile ."
+                sh 'mvn -B -DskipTests clean package'
             }
         }
-
-        stage('Push Image') {
+        stage('K8s') {
             steps {
-                // 登录Docker Hub
-                withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    // 使用Docker命令登录
-                    sh "sudo docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                    // 使用Docker命令推送镜像
-                    sh "sudo docker push ${IMAGE_NAME}:${TAG}"
-                }
+                sh 'kubectl set image deployments/hello-node container-name=c82531/teedytest2024:v1.0'
             }
         }
-
-     // 添加一个阶段来停止和移除之前的容器
-        stage('Stop and Remove Previous Containers') {
-            steps {
-                // 停止并移除名为teedy_01的容器
-                sh "sudo docker stop teedy_01 || true"
-                sh "sudo docker rm teedy_01 || true"
-                // 停止并移除名为teedy_02的容器
-                sh "sudo docker stop teedy_02 || true"
-                sh "sudo docker rm teedy_02 || true"
-                // 停止并移除名为teedy_03的容器
-                sh "sudo docker stop teedy_03 || true"
-                sh "sudo docker rm teedy_03 || true"
-            }
-        }
-    //Running Docker container
-    stage('Run containers'){
-      steps{
-        sh 'sudo docker run -d -p 8084:8080 --name teedy_01 ${IMAGE_NAME}:${TAG}'
-        sh 'sudo docker run -d -p 8082:8080 --name teedy_02 ${IMAGE_NAME}:${TAG}'
-        sh 'sudo docker run -d -p 8083:8080 --name teedy_03 ${IMAGE_NAME}:${TAG}'
-
-      
-      }
     }
-  }
 }
